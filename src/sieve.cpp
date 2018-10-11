@@ -76,7 +76,7 @@ void Sieve::mSieve()
 		mArgArr[i] = kPrime;
 	
 	//the core of the sieve algorithm, go through the list and mark all consonants
-	for (int i = min; i < max; ++i)
+	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
 	{
 		int a = mList[i];
 		//if(a == 2) break;

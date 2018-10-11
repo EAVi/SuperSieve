@@ -48,7 +48,19 @@ int main(int argc, char* args[])
 		printf("there exists %i primes up to %i\n", listsize, nsize);	
 		printf("execution time: %f seconds\n", diff);
 	}
-	printf("diff = %f, lat = %f, %f% \n", sieve.getTiming(), sieve.getLatency(), sieve.getLatency() / (sieve.getLatency() + sieve.getTiming()));
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	double pdiff = sieve.getTiming();//amount of time used on calculation
+	double lat = sieve.getLatency();//communication latency(through MPI_Allreduce)
+	double perlat = 100*lat/(pdiff + lat);//percent of program in communication latency
+	
+	//use barriers to print outputs in order
+	for (int i = 0; i < np; ++i)
+	{
+		if (rank == i)
+			printf("rank = %i diff = %f, lat = %f, %f% \n", rank,  pdiff, lat, perlat);
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
 	sieve.clean();
 	MPI_Finalize();
