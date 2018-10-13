@@ -21,11 +21,15 @@ int main(int argc, char* args[])
 	int np = 1;
 	int rank = -1;
 	double begin, end, diff;
+	//process name
+	int pnamelen = 0;
+	char pname[MPI_MAX_PROCESSOR_NAME];
 
 	MPI_Status status;
 	MPI_Init(&argc, &args);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
+	MPI_Get_processor_name(pname, &pnamelen);
 
 	begin = MPI_Wtime();
 	Sieve sieve(nsize, np, rank);
@@ -58,7 +62,7 @@ int main(int argc, char* args[])
 	for (int i = 0; i < np; ++i)
 	{
 		if (rank == i)
-			printf("rank = %i diff = %f, lat = %f, %f% \n", rank,  pdiff, lat, perlat);
+			printf("rank = %i, pname = %s, diff = %f, lat = %f, %f% \n", rank, pname, pdiff, lat, perlat);
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
