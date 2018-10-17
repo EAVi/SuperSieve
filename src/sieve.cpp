@@ -79,7 +79,7 @@ void Sieve::mSieve()
 	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
 	{
 		int a = mList[i];
-		//if(a == 2) break;
+		if(a == 2) continue;
 		for (int j = a*2; j < mArgArrSize; j += a)
 		{
 			mArgArr[j] = kConsonant;
