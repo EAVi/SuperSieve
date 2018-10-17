@@ -3,7 +3,7 @@
 #executable name
 EXEC=ssieve
 #source files
-SRCS=main.cpp scale.cpp sieve.cpp
+SRCS=binarray.cpp main.cpp scale.cpp sieve.cpp
 #object files
 OBJS=$(SRCS:.cpp=.o)
 
