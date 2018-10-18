@@ -1,6 +1,10 @@
 #ifndef BINARRAY_H
 #define BINARRAY_H
 
+#include <cstdlib>
+#include <cstdio>
+#include <mpi.h>
+
 const bool kPrime = false;
 const bool kConsonant = true;
 const bool kNonPrime = true;
@@ -19,6 +23,7 @@ public:
 	void allocate(int binsize); //allocate array
 	
 	int getSize();//return mBitSize
+	void printArray();//print it all
 	
 private:
 	char* mData;

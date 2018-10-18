@@ -5,11 +5,7 @@
 #include <cstdio>
 #include "mpi.h"
 #include "scale.h"
-
-const char kPrime = 0;
-const char kConsonant = 1;
-const char kNonPrime = 1;
-
+#include "binarray.h"
 
 class Sieve
 {
@@ -29,7 +25,7 @@ private:
 	
 	int* mList;
 	int mListSize;
-	char* mArgArr;
+	BinArray mArgArr;
 	int mArgArrSize;
 	int mHighestPrime;
 	

@@ -7,10 +7,10 @@ Sieve::Sieve(int n, int np, int rank)
 {
 	mList = NULL;
 	mListSize = 0;
-	mArgArr = NULL;
 	mArgArrSize = 0;
 	mLatency = 0.0;
 	mDiff = 0.0;
+	mArgArr = BinArray();
 }
 
 void Sieve::findPrimes()
@@ -35,11 +35,7 @@ void Sieve::clean()
 		free(mList);
 		mList = NULL;
 	}
-	if(mArgArr != NULL)
-	{
-		free(mArgArr);
-		mArgArr = NULL;
-	}
+	mArgArr.clear();
 }
 
 double Sieve::getTiming()
@@ -60,20 +56,16 @@ void Sieve::mSieve()
 	int min = AssignMin(mListSize, mProcessSize, mProcessRank);
 	int max = AssignMax(mListSize, mProcessSize, mProcessRank);
 	
-	//reallocate mArgArr
+	//find size of mArgArr, then allocate size
 	mArgArrSize = mHighestPrime * mHighestPrime + 2;//up to index 2^mH + 1
 	if (mArgArrSize >= mMaxPrime)
 		mArgArrSize = mMaxPrime + 1;
 	
-	if(mArgArr != NULL)
-		free(mArgArr);
-	mArgArr = (char*)malloc(sizeof(char) * mArgArrSize);
-	
+	mArgArr.allocate(mArgArrSize);
+
 	//set mArgArr to all primes, except 0 and 1
-	mArgArr[0] = kConsonant;
-	mArgArr[1] = kConsonant;
-	for (int i = 2; i < mArgArrSize; ++i)
-		mArgArr[i] = kPrime;
+	mArgArr.setConsonant(0);
+	mArgArr.setConsonant(1);
 	
 	//the core of the sieve algorithm, go through the list and mark all consonants
 	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
@@ -82,7 +74,7 @@ void Sieve::mSieve()
 		if(a == 2) continue;
 		for (int j = a*2; j < mArgArrSize; j += a)
 		{
-			mArgArr[j] = kConsonant;
+			mArgArr.setConsonant(j);
 		}
 	}
 
@@ -98,7 +90,7 @@ void Sieve::mSieve()
 	mListSize = 1;
 	for(int i = 3; i < mArgArrSize; i += 2)
 	{
-		if(mArgArr[i] == kPrime)
+		if(mArgArr.get(i) == kPrime)
 		{
 			mListSize++;
 		}
@@ -109,7 +101,7 @@ void Sieve::mSieve()
 	mList[0] = 2;
 	for(int i = 3, j = 1; i < mArgArrSize && j < mListSize; i += 2)
 	{
-		if(mArgArr[i] == kPrime)
+		if(mArgArr.get(i) == kPrime)
 			mList[j++] = i;
 	}
 	
@@ -120,10 +112,7 @@ void Sieve::mSieve()
 
 void Sieve::mReduce()
 {
-	char* temparr = (char*)malloc(sizeof(char)* mArgArrSize);
-	MPI_Allreduce(mArgArr, temparr, mArgArrSize, MPI_CHAR, MPI_BOR, MPI_COMM_WORLD);
-	free(mArgArr);
-	mArgArr = temparr;
+	mArgArr.reduce();
 }
 
 void Sieve::mInitialize()
