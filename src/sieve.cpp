@@ -1,4 +1,5 @@
 #include "sieve.h"
+#include "cuda_sieve.h"
 
 Sieve::Sieve(int n, int np, int rank)
 	: mMaxPrime(n)
@@ -11,14 +12,17 @@ Sieve::Sieve(int n, int np, int rank)
 	mLatency = 0.0;
 	mDiff = 0.0;
 	mArgArr = BinArray();
+	mCUDA_binarray = NULL;
+	mError = false;
 }
 
 void Sieve::findPrimes()
 {
 	mInitialize();
-	while (mArgArrSize < mMaxPrime)
+	while (mArgArrSize <= mMaxPrime)
 	{
 		mSieve();
+		if (mError) return;
 	}
 }
 
@@ -58,25 +62,43 @@ void Sieve::mSieve()
 	
 	//find size of mArgArr, then allocate size
 	mArgArrSize = mHighestPrime * mHighestPrime + 2;//up to index 2^mH + 1
-	if (mArgArrSize >= mMaxPrime)
+	if (mArgArrSize > mMaxPrime)
 		mArgArrSize = mMaxPrime + 1;
-	
-	mArgArr.allocate(mArgArrSize);
+
+	int bytesize = 1 + (mArgArrSize >> 4);
+	if(mCUDA_binarray != NULL)//deallocate the cuda data
+	{
+		free(mCUDA_binarray);
+		mCUDA_binarray = NULL;
+	}
+
+
+	mArgArr.allocate(mArgArrSize);//the function automatically reallocates the memory
+	mCUDA_binarray = (char*)malloc(bytesize * sizeof(char));
 
 	//set mArgArr to all primes, except 0 and 1
 	mArgArr.setConsonant(0);
 	mArgArr.setConsonant(1);
 	
-	//the core of the sieve algorithm, go through the list and mark all consonants
-	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
+	bool cuda_success = launch_cuda_sieve(&mCUDA_binarray, mArgArrSize, mList, mListSize, mProcessRank, mProcessSize);
+	if (!cuda_success)
 	{
-		int a = mList[i];
-		if(a == 2) continue;
-		for (int j = a*2; j < mArgArrSize; j += a)
-		{
-			mArgArr.setConsonant(j);
-		}
+		mError = true;
+		return;
 	}
+	//the core of the sieve algorithm, go through the list and mark all consonants
+//	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
+//	{
+//		int a = mList[i];
+//		if(a == 2) continue;
+//		for (int j = a*2; j < mArgArrSize; j += a)
+//		{
+//			mArgArr.setConsonant(j);
+//		}
+//	}
+
+	mArgArr.setCUDAData(&mCUDA_binarray);
+
 
 	end = MPI_Wtime();
 	mDiff += end - begin;
@@ -84,7 +106,7 @@ void Sieve::mSieve()
 	mReduce();
 	begin = MPI_Wtime();
 	mLatency += begin - end;
-	
+
 	//to save memory at the cost of more time,
 	//count the number of primes before making a list
 	mListSize = 1;
@@ -95,8 +117,10 @@ void Sieve::mSieve()
 			mListSize++;
 		}
 	}
+
 	//create the next prime list
 	free(mList);
+	mList = NULL;
 	mList = (int*)malloc(sizeof(int) * mListSize);
 	mList[0] = 2;
 	for(int i = 3, j = 1; i < mArgArrSize && j < mListSize; i += 2)
@@ -104,10 +128,11 @@ void Sieve::mSieve()
 		if(mArgArr.get(i) == kPrime)
 			mList[j++] = i;
 	}
-	
+
 	mHighestPrime = mList[mListSize - 1];
 	end = MPI_Wtime();
 	mDiff += end - begin;
+
 }
 
 void Sieve::mReduce()
@@ -122,4 +147,23 @@ void Sieve::mInitialize()
 	mList[0] = 2;
 	mHighestPrime = 2;
 
+}
+
+bool Sieve::mAllocate()
+{
+//	if (!launch_cudamalloc(&mCUDA_binarray, mArgArrSize))
+//	{
+//		mError = true;
+//		return false;
+//	}
+	return true;
+}
+
+void Sieve::mDeallocate()
+{
+//	if(mCUDA_binarray != NULL)
+//	{
+//		launch_cudafree(&mCUDA_binarray);
+//		mCUDA_binarray = NULL;
+//	}
 }

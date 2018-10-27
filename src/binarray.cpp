@@ -1,8 +1,12 @@
+#include <iostream>
 #include "binarray.h"
+#include "mpi.h"
+#include "cuda_sieve.h"
 
 BinArray::BinArray()
 {
 	mData = NULL;
+	mCUDA_Data = NULL;
 	mBitSize = 0;
 	mByteSize = 0;
 }
@@ -10,6 +14,7 @@ BinArray::BinArray()
 BinArray::BinArray(int binsize)
 {
 	mData = NULL;
+	mCUDA_Data = NULL;
 	mBitSize = 0;
 	mByteSize = 0;
 	allocate(binsize);
@@ -18,6 +23,7 @@ BinArray::BinArray(int binsize)
 void BinArray::setConsonant(int i)
 {
 	if (i >= mBitSize) return;
+	if (mData == NULL) return;
 	/*
 		since the only even prime is 2, the set ignores the lowest bit 
 		of the address and only goes through odds 
@@ -41,6 +47,7 @@ void BinArray::setConsonant(int i)
 
 bool BinArray::get(int i)
 {
+	if (mData == NULL) return kPrime;
 	if (i >= mBitSize) 
 	{
 		printf("Error: index %i >= %i\n\n", i, mBitSize);
@@ -69,22 +76,39 @@ void BinArray::reduce()
 {
 	char* temparr = (char*)malloc(sizeof(char) * mByteSize);
 	MPI_Allreduce(mData, temparr, mByteSize, MPI_CHAR, MPI_BOR, MPI_COMM_WORLD);
-	free(mData);
+	deallocate();
 	mData = temparr;
-	//MPI_AllReduce in here or whatever
+}
+
+void BinArray::deallocate()
+{
+	if(mData == NULL)
+		return;
+//	else if (mCUDA_Data != NULL)
+//	{
+//		printf("%s\n", "calling cudafree");
+//		launch_cudafree(mCUDA_Data);
+//		fflush(stdin);
+//		mData = NULL;
+//		mCUDA_Data = NULL;
+//	}
+//	else
+	{
+		free(mData);
+		mData = NULL;
+	}
+	if (mCUDA_Data != NULL)
+	{
+		*mCUDA_Data = NULL;
+		mCUDA_Data = NULL;
+	}
 }
 
 void BinArray::clear()
 {
-	if(mData == NULL)
-		return;
-	else 
-	{
-		free(mData);
-		mData = NULL;
-		mBitSize = 0;
-		mByteSize = 0;
-	}
+	deallocate();
+	mBitSize = 0;
+	mByteSize = 0;
 }
 
 void BinArray::tare()
@@ -124,5 +148,23 @@ void BinArray::printArray()
 	{
 		printf("%i, ", get(i));
 
+	}
+	printf("\n");
+}
+
+char* BinArray::getData()
+{
+	return mData;
+}
+
+void BinArray::setCUDAData(char** c)
+{
+	if (c == NULL) return;
+	if (*c == NULL) return;
+	if(mData != NULL)
+	{
+		free(mData);
+		mData = *c;
+		mCUDA_Data = c;
 	}
 }

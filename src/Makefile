@@ -3,15 +3,23 @@
 #executable name
 EXEC=ssieve
 #source files
-SRCS=binarray.cpp main.cpp scale.cpp sieve.cpp
+OMPISRCS=binarray.cpp main.cpp scale.cpp sieve.cpp
+CUDASRCS=cuda_sieve.cu
 #object files
-OBJS=$(SRCS:.cpp=.o)
+OMPIOBJS=$(OMPISRCS:.cpp=.o)
+CUDAOBJS=$(CUDASRCS:.cu=.o)
 
-$(EXEC): $(OBJS)
-	mpic++ -o $@ $(OBJS)
+OBJS=$(OMPIOBJS)
+OBJS+=$(CUDAOBJS)
 
-$(OBJS):
+$(EXEC): $(OMPIOBJS) $(CUDAOBJS)
+	mpic++ -o $@ $(OBJS) -lcudart -L /usr/local/cuda/lib64 
+
+$(OMPIOBJS):
 	mpic++ -c $*.cpp
 
+$(CUDAOBJS):
+	nvcc -ccbin /usr/bin/gcc53 -c $*.cu
+
 clean:
-	rm $(OBJS)
+	rm $(OMPIOBJS) $(CUDAOBJS)

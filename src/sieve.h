@@ -27,12 +27,17 @@ private:
 	int mListSize;
 	BinArray mArgArr;
 	int mArgArrSize;
+	char* mCUDA_binarray;
 	int mHighestPrime;
 	
 	void mSieve();
 	void mReduce();
 	void mInitialize();
+	bool mAllocate();
+	void mDeallocate();
 
+	//error
+	bool mError;
 	//latency and timing
 	double mDiff;
 	double mLatency;
