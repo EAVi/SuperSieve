@@ -8,4 +8,15 @@
 
 - [x] Sieve of Eratosthenes up to M
 - [x] Using MPI
-- [ ] Using CUDA
+- [x] Using CUDA
+
+
+##### Running:
+Here's what I use if I plan on running CUDA on multiple nodes:
+```
+mpirun -np 10 -hostfile hostfile --map-by ppr:1:node ssieve 1000000000 0
+```
+And if I do not plan on using CUDA:
+```
+mpirun -hostfile hostfile 1000000000
+```

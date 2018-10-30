@@ -10,7 +10,7 @@
 class Sieve
 {
 public:
-	Sieve(int n, int np, int rank);
+	Sieve(int n, int np, int rank, int cudasize);
 	void findPrimes();
 	void getList(int** list, int* listsize);
 	void clean();
@@ -22,6 +22,7 @@ private:
 	const int mMaxPrime;
 	const int mProcessSize;
 	const int mProcessRank;
+	const int mUseCUDA;//use cuda when problem reaches given size, always use if 0, never use if -1
 	
 	int* mList;
 	int mListSize;
@@ -31,6 +32,7 @@ private:
 	int mHighestPrime;
 	
 	void mSieve();
+	bool mKernel();//the iterative and complex part of the algorithm
 	void mReduce();
 	void mInitialize();
 	bool mAllocate();

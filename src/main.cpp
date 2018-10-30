@@ -10,10 +10,16 @@ using namespace std;
 int main(int argc, char* args[])
 {
 	int nsize = 100;
-	if (argc == 2)
+	int cudasize = -1;
+	if (argc >= 2 )
 	{
 		nsize = atoi(args[1]);
 	}
+	if (argc == 3)
+	{
+		cudasize =  atoi(args[2]);
+	}
+	
 	int* list = NULL;
 	int listsize = 0;
 	
@@ -32,7 +38,7 @@ int main(int argc, char* args[])
 	MPI_Get_processor_name(pname, &pnamelen);
 
 	begin = MPI_Wtime();
-	Sieve sieve(nsize, np, rank);
+	Sieve sieve(nsize, np, rank, cudasize);
 	sieve.findPrimes();
 
 	//timing stuff

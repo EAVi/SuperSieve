@@ -1,10 +1,11 @@
 #include "sieve.h"
 #include "cuda_sieve.h"
 
-Sieve::Sieve(int n, int np, int rank)
+Sieve::Sieve(int n, int np, int rank, int cudasize)
 	: mMaxPrime(n)
 	, mProcessSize(np)
 	, mProcessRank(rank)
+	, mUseCUDA(cudasize)
 {
 	mList = NULL;
 	mListSize = 0;
@@ -79,25 +80,9 @@ void Sieve::mSieve()
 	//set mArgArr to all primes, except 0 and 1
 	mArgArr.setConsonant(0);
 	mArgArr.setConsonant(1);
-	
-	bool cuda_success = launch_cuda_sieve(&mCUDA_binarray, mArgArrSize, mList, mListSize, mProcessRank, mProcessSize);
-	if (!cuda_success)
-	{
-		mError = true;
-		return;
-	}
-	//the core of the sieve algorithm, go through the list and mark all consonants
-//	for (int i = mProcessRank; i < mListSize; i += mProcessSize)
-//	{
-//		int a = mList[i];
-//		if(a == 2) continue;
-//		for (int j = a*2; j < mArgArrSize; j += a)
-//		{
-//			mArgArr.setConsonant(j);
-//		}
-//	}
 
-	mArgArr.setCUDAData(&mCUDA_binarray);
+	if(!mKernel())
+		return;//return on kernel failure
 
 
 	end = MPI_Wtime();
@@ -132,6 +117,35 @@ void Sieve::mSieve()
 	mHighestPrime = mList[mListSize - 1];
 	end = MPI_Wtime();
 	mDiff += end - begin;
+
+}
+
+bool Sieve::mKernel()
+{
+	bool usecuda = (mUseCUDA < 0) ? (false) : (mUseCUDA <= mArgArrSize);
+	//the core of the sieve algorithm, go through the list and mark all consonants
+	if (!usecuda)
+	{
+		for (int i = mProcessRank; i < mListSize; i += mProcessSize)
+		{
+			int a = mList[i];
+			if(a == 2) continue;
+			for (int j = a*2; j < mArgArrSize; j += a)
+			{
+				mArgArr.setConsonant(j);
+			}
+		}
+	}
+	else //usecuda
+	{
+		if(!launch_cuda_sieve(&mCUDA_binarray, mArgArrSize, mList, mListSize, mProcessRank, mProcessSize))
+		{
+			mError = true;
+			return false;
+		}
+		mArgArr.setCUDAData(&mCUDA_binarray);
+	}
+	return true;
 
 }
 
