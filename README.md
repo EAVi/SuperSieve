@@ -28,7 +28,13 @@ To get any noticeable speedup, a large value M is needed.
 
 | M | 1 CPU | 1 GPU | 4 CPU cores | 40 CPU cores | 10 GPUs |
 | --- | --- | --- | --- | --- | --- |
+| 10<sup>8</sup> |  1.608491 s  | 1.386432 s | 1.105095 s | 1.374422 s | 1.503408 s |
 | 10<sup>9</sup> |  22.097686 s  | 10.668882 s | 11.947728 s | 10.336707 s | 13.235919 s |
+| 1.5\*10<sup>9</sup> |  33.700170 s  | 15.902881 s | 24.185493 s |  20.957107 s | 23.576214 s |
+
+There were a lot of difficulties when trying to parallelize the algorithm: Workload, network latency, and GPU staging are the big 3. I was able to get a fairly good speedup with multiple CPUs, but distrbituing the problem on the school network introduced some slowdowns, even after implementing a structure that reduced the amount of data by <sup>1</sup>&frasl;<sub>16</sub>th.
+
+I was able to get more remarkable results with my [SuperConway](https://github.com/EAVi/SuperConway) algorithm.
 
 ### Complexity:
 This specific implementation of the algorithm is &in; __O__(&pi;(_M_)<sup>2</sup>), where &pi;(_M_) is the number of primes up to _M_
